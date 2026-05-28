@@ -2,7 +2,7 @@ const { verifyToken } = require("../utils/tokenHelper");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const { callClaudeAPIStream } = require("../services/aiService");
+const { callGeminiAPIStream } = require("../services/aiService");
 const { getValidBotTypes } = require("../services/botPersonalities");
 
 // ─── Auth middleware for Socket.io ──────────────────────────────
@@ -146,7 +146,7 @@ const setupSocketHandlers = (io) => {
         aiMessageId = placeholderMsg._id;
 
         // ── Stream AI response ──────────────────────────────
-        await callClaudeAPIStream(
+        await callGeminiAPIStream(
           botType,
           chronologicalHistory,
           trimmedMessage,
