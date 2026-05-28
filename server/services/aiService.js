@@ -11,7 +11,7 @@ const buildHistory = (conversationHistory) => {
   }));
 };
 
-// ─── Non-streaming version ────────────────────────────────────
+// ─── Non-streaming call ───────────────────────────────────────
 const callGeminiAPI = async (botType, conversationHistory, userMessage) => {
   const bot = getBotPersonality(botType);
 
@@ -20,7 +20,7 @@ const callGeminiAPI = async (botType, conversationHistory, userMessage) => {
   }
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     systemInstruction: bot.systemPrompt,
   });
 
@@ -39,7 +39,7 @@ const callGeminiAPI = async (botType, conversationHistory, userMessage) => {
   };
 };
 
-// ─── Streaming version ───────────────────────────────────────
+// ─── Streaming call ───────────────────────────────────────────
 const callGeminiAPIStream = async (
   botType,
   conversationHistory,
@@ -57,7 +57,7 @@ const callGeminiAPIStream = async (
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       systemInstruction: bot.systemPrompt,
     });
 
@@ -80,6 +80,7 @@ const callGeminiAPIStream = async (
 
     onDone(fullText, 0);
   } catch (err) {
+    console.error("Gemini Streaming Error:", err);
     onError(err);
   }
 };
@@ -88,6 +89,97 @@ module.exports = {
   callGeminiAPI,
   callGeminiAPIStream,
 };
+
+// const { GoogleGenerativeAI } = require("@google/generative-ai");
+// const { getBotPersonality } = require("./botPersonalities");
+
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// // ─── Build chat history ───────────────────────────────────────
+// const buildHistory = (conversationHistory) => {
+//   return conversationHistory.map((msg) => ({
+//     role: msg.role === "assistant" ? "model" : "user",
+//     parts: [{ text: msg.content }],
+//   }));
+// };
+
+// // ─── Non-streaming version ────────────────────────────────────
+// const callGeminiAPI = async (botType, conversationHistory, userMessage) => {
+//   const bot = getBotPersonality(botType);
+
+//   if (!bot) {
+//     throw new Error(`Invalid bot type: ${botType}`);
+//   }
+
+//   const model = genAI.getGenerativeModel({
+//     model: "gemini-2.0-flash",
+//     systemInstruction: bot.systemPrompt,
+//   });
+
+//   const chat = model.startChat({
+//     history: buildHistory(conversationHistory),
+//   });
+
+//   const result = await chat.sendMessage(userMessage);
+
+//   const response = result.response;
+
+//   return {
+//     content: response.text(),
+//     inputTokens: 0,
+//     outputTokens: 0,
+//   };
+// };
+
+// // ─── Streaming version ───────────────────────────────────────
+// const callGeminiAPIStream = async (
+//   botType,
+//   conversationHistory,
+//   userMessage,
+//   onChunk,
+//   onDone,
+//   onError,
+// ) => {
+//   try {
+//     const bot = getBotPersonality(botType);
+
+//     if (!bot) {
+//       onError(new Error(`Invalid bot type: ${botType}`));
+//       return;
+//     }
+
+//     const model = genAI.getGenerativeModel({
+//       model: "gemini-2.0-flash",
+//       systemInstruction: bot.systemPrompt,
+//     });
+
+//     const chat = model.startChat({
+//       history: buildHistory(conversationHistory),
+//     });
+
+//     const result = await chat.sendMessageStream(userMessage);
+
+//     let fullText = "";
+
+//     for await (const chunk of result.stream) {
+//       const text = chunk.text();
+
+//       if (text) {
+//         fullText += text;
+//         onChunk(text);
+//       }
+//     }
+
+//     onDone(fullText, 0);
+//   } catch (err) {
+//     onError(err);
+//   }
+// };
+
+// module.exports = {
+//   callGeminiAPI,
+//   callGeminiAPIStream,
+// };
 
 // const { getBotPersonality } = require("./botPersonalities");
 
