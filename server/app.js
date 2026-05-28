@@ -53,7 +53,7 @@ app.use(cookieParser());
 
 // ─── Data Sanitization ─────────────────────────────────────────
 app.use(mongoSanitize);
-app.use(xss()); // ← FIX 1
+// app.use(xss()); // ← FIX 1
 
 // ─── Rate Limiting ─────────────────────────────────────────────
 app.use("/api", generalLimiter);
