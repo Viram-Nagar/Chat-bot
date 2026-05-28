@@ -141,7 +141,7 @@ const setupSocketHandlers = (io) => {
           conversationId: conversation._id,
           userId: socket.user._id,
           role: "assistant",
-          content: "", // will update
+          content: "Thinking...", // will update
         });
         aiMessageId = placeholderMsg._id;
 
