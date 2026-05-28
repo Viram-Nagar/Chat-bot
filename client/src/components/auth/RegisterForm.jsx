@@ -182,7 +182,7 @@ const RegisterForm = () => {
     });
     if (result.success) {
       toast.success("Account created! Welcome to ChatAI 🎉");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } else {
       toast.error(result.message || "Registration failed");
     }
