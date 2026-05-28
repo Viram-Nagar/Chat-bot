@@ -1,6 +1,6 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const { callClaudeAPI } = require("../services/aiService");
+const { callGeminiAPI } = require("../services/aiService");
 const { getValidBotTypes } = require("../services/botPersonalities");
 const { AppError } = require("../middleware/errorHandler");
 
@@ -77,7 +77,7 @@ const sendMessage = async (req, res, next) => {
     // Call Claude API
     let aiResponse;
     try {
-      aiResponse = await callClaudeAPI(
+      aiResponse = await callGeminiAPI(
         botType,
         chronologicalHistory,
         message.trim(),

@@ -87,6 +87,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const historyRoutes = require("./routes/historyRoutes");
 
 const app = express();
+app.set("trust proxy", 1);
 
 // ─── Security Middleware ────────────────────────────────────────
 app.use(
@@ -1503,7 +1504,50 @@ module.exports = mongoose.model("Conversation", conversationSchema);
 </file>
 
 <file path="models/Message.js">
+const mongoose = require("mongoose");
 
+const messageSchema = new mongoose.Schema(
+  {
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
+      required: [true, "Conversation ID is required"],
+      index: true,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User ID is required"],
+    },
+    role: {
+      type: String,
+      enum: ["user", "assistant"],
+      required: [true, "Role is required"],
+    },
+    content: {
+      type: String,
+      required: [true, "Content is required"],
+      trim: true,
+      maxlength: [10000, "Message cannot exceed 10000 characters"],
+    },
+    tokens: {
+      type: Number,
+      default: 0,
+    },
+    isError: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+// ─── Index for retrieving messages in order ─────────────────────
+messageSchema.index({ conversationId: 1, createdAt: 1 });
+
+module.exports = mongoose.model("Message", messageSchema);
 </file>
 
 <file path="models/User.js">
@@ -1567,7 +1611,7 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving
 userSchema.pre("save", async function () {
-  if (!this.isModified("password"));
+  if (!this.isModified("password")) return;
 
   this.password = await bcrypt.hash(this.password, 12);
 });
@@ -1595,12 +1639,14 @@ module.exports = mongoose.model("User", userSchema);
   "description": "AI Chatbot Platform Backend",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
@@ -1962,147 +2008,238 @@ process.on("SIGTERM", () => {
 </file>
 
 <file path="services/aiService.js">
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { getBotPersonality } = require("./botPersonalities");
 
-// ─── Standard (non-streaming) call ─────────────────────────────
-const callClaudeAPI = async (botType, conversationHistory, userMessage) => {
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ─── Build chat history ───────────────────────────────────────
+const buildHistory = (conversationHistory) => {
+  return conversationHistory.map((msg) => ({
+    role: msg.role === "assistant" ? "model" : "user",
+    parts: [{ text: msg.content }],
+  }));
+};
+
+// ─── Non-streaming version ────────────────────────────────────
+const callGeminiAPI = async (botType, conversationHistory, userMessage) => {
   const bot = getBotPersonality(botType);
-  if (!bot) throw new Error(`Invalid bot type: ${botType}`);
 
-  const messages = [
-    ...conversationHistory.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    })),
-    { role: "user", content: userMessage },
-  ];
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 1024,
-      system: bot.systemPrompt,
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(
-      `Claude API error: ${errorData.error?.message || "Unknown error"}`,
-    );
+  if (!bot) {
+    throw new Error(`Invalid bot type: ${botType}`);
   }
 
-  const data = await response.json();
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: bot.systemPrompt,
+  });
+
+  const chat = model.startChat({
+    history: buildHistory(conversationHistory),
+  });
+
+  const result = await chat.sendMessage(userMessage);
+
+  const response = result.response;
+
   return {
-    content: data.content[0].text,
-    inputTokens: data.usage?.input_tokens || 0,
-    outputTokens: data.usage?.output_tokens || 0,
+    content: response.text(),
+    inputTokens: 0,
+    outputTokens: 0,
   };
 };
 
-// ─── Streaming call (yields chunks via callback) ────────────────
-const callClaudeAPIStream = async (
+// ─── Streaming version ───────────────────────────────────────
+const callGeminiAPIStream = async (
   botType,
   conversationHistory,
   userMessage,
-  onChunk, // callback(chunk: string)
-  onDone, // callback(fullText: string, tokens: number)
-  onError, // callback(error: Error)
+  onChunk,
+  onDone,
+  onError,
 ) => {
-  const bot = getBotPersonality(botType);
-  if (!bot) {
-    onError(new Error(`Invalid bot type: ${botType}`));
-    return;
-  }
-
-  const messages = [
-    ...conversationHistory.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    })),
-    { role: "user", content: userMessage },
-  ];
-
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
-        max_tokens: 1024,
-        stream: true, // ← streaming
-        system: bot.systemPrompt,
-        messages,
-      }),
-    });
+    const bot = getBotPersonality(botType);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        `Claude API error: ${errorData.error?.message || "Unknown error"}`,
-      );
+    if (!bot) {
+      onError(new Error(`Invalid bot type: ${botType}`));
+      return;
     }
 
-    // Read SSE stream
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: bot.systemPrompt,
+    });
+
+    const chat = model.startChat({
+      history: buildHistory(conversationHistory),
+    });
+
+    const result = await chat.sendMessageStream(userMessage);
+
     let fullText = "";
-    let outputTokens = 0;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
-
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-
-        const data = line.slice(6).trim();
-        if (data === "[DONE]") continue;
-
-        try {
-          const parsed = JSON.parse(data);
-
-          // Text delta chunk
-          if (
-            parsed.type === "content_block_delta" &&
-            parsed.delta?.type === "text_delta"
-          ) {
-            const text = parsed.delta.text || "";
-            fullText += text;
-            onChunk(text); // stream to client
-          }
-
-          // Usage info
-          if (parsed.type === "message_delta" && parsed.usage) {
-            outputTokens = parsed.usage.output_tokens || 0;
-          }
-        } catch (_) {
-          // Skip malformed SSE lines
-        }
+      if (text) {
+        fullText += text;
+        onChunk(text);
       }
     }
 
-    onDone(fullText, outputTokens);
+    onDone(fullText, 0);
   } catch (err) {
     onError(err);
   }
 };
 
-module.exports = { callClaudeAPI, callClaudeAPIStream };
+module.exports = {
+  callGeminiAPI,
+  callGeminiAPIStream,
+};
+
+// const { getBotPersonality } = require("./botPersonalities");
+
+// // ─── Standard (non-streaming) call ─────────────────────────────
+// const callClaudeAPI = async (botType, conversationHistory, userMessage) => {
+//   const bot = getBotPersonality(botType);
+//   if (!bot) throw new Error(`Invalid bot type: ${botType}`);
+
+//   const messages = [
+//     ...conversationHistory.map((msg) => ({
+//       role: msg.role,
+//       content: msg.content,
+//     })),
+//     { role: "user", content: userMessage },
+//   ];
+
+//   const response = await fetch("https://api.anthropic.com/v1/messages", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       "x-api-key": process.env.ANTHROPIC_API_KEY,
+//       "anthropic-version": "2023-06-01",
+//     },
+//     body: JSON.stringify({
+//       model: "claude-3-5-haiku-20241022",
+//       max_tokens: 1024,
+//       system: bot.systemPrompt,
+//       messages,
+//     }),
+//   });
+
+//   if (!response.ok) {
+//     const errorData = await response.json();
+//     throw new Error(
+//       `Claude API error: ${errorData.error?.message || "Unknown error"}`,
+//     );
+//   }
+
+//   const data = await response.json();
+//   return {
+//     content: data.content[0].text,
+//     inputTokens: data.usage?.input_tokens || 0,
+//     outputTokens: data.usage?.output_tokens || 0,
+//   };
+// };
+
+// // ─── Streaming call (yields chunks via callback) ────────────────
+// const callClaudeAPIStream = async (
+//   botType,
+//   conversationHistory,
+//   userMessage,
+//   onChunk, // callback(chunk: string)
+//   onDone, // callback(fullText: string, tokens: number)
+//   onError, // callback(error: Error)
+// ) => {
+//   const bot = getBotPersonality(botType);
+//   if (!bot) {
+//     onError(new Error(`Invalid bot type: ${botType}`));
+//     return;
+//   }
+
+//   const messages = [
+//     ...conversationHistory.map((msg) => ({
+//       role: msg.role,
+//       content: msg.content,
+//     })),
+//     { role: "user", content: userMessage },
+//   ];
+
+//   try {
+//     const response = await fetch("https://api.anthropic.com/v1/messages", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         "x-api-key": process.env.ANTHROPIC_API_KEY,
+//         "anthropic-version": "2023-06-01",
+//       },
+//       body: JSON.stringify({
+//         model: "claude-3-5-haiku-20241022",
+//         max_tokens: 1024,
+//         stream: true, // ← streaming
+//         system: bot.systemPrompt,
+//         messages,
+//       }),
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(
+//         `Claude API error: ${errorData.error?.message || "Unknown error"}`,
+//       );
+//     }
+
+//     // Read SSE stream
+//     const reader = response.body.getReader();
+//     const decoder = new TextDecoder();
+//     let fullText = "";
+//     let outputTokens = 0;
+
+//     while (true) {
+//       const { done, value } = await reader.read();
+//       if (done) break;
+
+//       const chunk = decoder.decode(value, { stream: true });
+//       const lines = chunk.split("\n");
+
+//       for (const line of lines) {
+//         if (!line.startsWith("data: ")) continue;
+
+//         const data = line.slice(6).trim();
+//         if (data === "[DONE]") continue;
+
+//         try {
+//           const parsed = JSON.parse(data);
+
+//           // Text delta chunk
+//           if (
+//             parsed.type === "content_block_delta" &&
+//             parsed.delta?.type === "text_delta"
+//           ) {
+//             const text = parsed.delta.text || "";
+//             fullText += text;
+//             onChunk(text); // stream to client
+//           }
+
+//           // Usage info
+//           if (parsed.type === "message_delta" && parsed.usage) {
+//             outputTokens = parsed.usage.output_tokens || 0;
+//           }
+//         } catch (_) {
+//           // Skip malformed SSE lines
+//         }
+//       }
+//     }
+
+//     onDone(fullText, outputTokens);
+//   } catch (err) {
+//     onError(err);
+//   }
+// };
+
+// module.exports = { callClaudeAPI, callClaudeAPIStream };
 
 // const { getBotPersonality } = require("./botPersonalities");
 
@@ -2314,7 +2451,7 @@ const { verifyToken } = require("../utils/tokenHelper");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const { callClaudeAPIStream } = require("../services/aiService");
+const { callGeminiAPIStream } = require("../services/aiService");
 const { getValidBotTypes } = require("../services/botPersonalities");
 
 // ─── Auth middleware for Socket.io ──────────────────────────────
@@ -2453,12 +2590,12 @@ const setupSocketHandlers = (io) => {
           conversationId: conversation._id,
           userId: socket.user._id,
           role: "assistant",
-          content: "", // will update
+          content: "Thinking...", // will update
         });
         aiMessageId = placeholderMsg._id;
 
         // ── Stream AI response ──────────────────────────────
-        await callClaudeAPIStream(
+        await callGeminiAPIStream(
           botType,
           chronologicalHistory,
           trimmedMessage,
