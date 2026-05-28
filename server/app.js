@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const mongoSanitize = require("express-mongo-sanitize");
+const mongoSanitize = require("./middleware/sanitize");
 const xss = require("xss-clean"); // ← FIX 1
 const { generalLimiter } = require("./middleware/rateLimiter");
 const { errorHandler } = require("./middleware/errorHandler");
@@ -52,7 +52,7 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
 // ─── Data Sanitization ─────────────────────────────────────────
-app.use(mongoSanitize());
+app.use(mongoSanitize);
 app.use(xss()); // ← FIX 1
 
 // ─── Rate Limiting ─────────────────────────────────────────────
