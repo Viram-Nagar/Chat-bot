@@ -10,7 +10,7 @@ const {
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 const { authLimiter } = require("../middleware/rateLimiter");
-const validate = require("../middleware/validation");
+const validate = require("../middleware/validate");
 const {
   registerSchema,
   loginSchema,
