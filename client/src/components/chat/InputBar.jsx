@@ -39,6 +39,13 @@ const InputBar = ({ onSend, isStreaming, isTyping, botType, disabled }) => {
   const canSend =
     message.trim().length > 0 && !isTyping && !isStreaming && !disabled;
 
+  console.log({
+    disabled,
+    isTyping,
+    isStreaming,
+    message,
+  });
+
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
       {/* ── Char counter (only near limit) ───────────── */}
@@ -82,6 +89,14 @@ const InputBar = ({ onSend, isStreaming, isTyping, botType, disabled }) => {
             if (e.target.value.length <= MAX_CHARS) {
               setMessage(e.target.value);
             }
+          }}
+          onPaste={(e) => {
+            const pastedText = e.clipboardData.getData("text");
+
+            setMessage((prev) => {
+              const newValue = prev + pastedText;
+              return newValue.slice(0, MAX_CHARS);
+            });
           }}
           onKeyDown={handleKeyDown}
           placeholder={
