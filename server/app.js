@@ -11,6 +11,7 @@ const { errorHandler } = require("./middleware/errorHandler");
 const authRoutes = require("./routes/authRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const historyRoutes = require("./routes/historyRoutes");
+const botSettingsRoutes = require("./routes/botSettingsRoutes");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -63,6 +64,7 @@ app.use("/api", generalLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/history", historyRoutes);
+app.use("/api/bot-settings", botSettingsRoutes);
 
 // ─── Health Check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

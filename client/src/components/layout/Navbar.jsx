@@ -7,6 +7,7 @@ import {
   History,
   LayoutDashboard,
   Bot,
+  Settings,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
@@ -115,6 +116,15 @@ const Navbar = () => {
                         >
                           <User size={15} />
                           Profile Settings
+                        </Link>
+
+                        <Link
+                          to="/bot-settings"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <Settings size={15} />
+                          Bot Settings
                         </Link>
 
                         <Link

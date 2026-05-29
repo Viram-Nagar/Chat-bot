@@ -8,6 +8,7 @@ import { useThemeStore } from "./store/themeStore";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import PublicRoute from "./components/layout/PublicRoute";
+import BotSettingsPage from "./pages/BotSettingsPage";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -101,6 +102,23 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/bot-settings"
+            element={
+              <ProtectedRoute>
+                <BotSettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bot-settings/:botType"
+            element={
+              <ProtectedRoute>
+                <BotSettingsPage />
               </ProtectedRoute>
             }
           />
