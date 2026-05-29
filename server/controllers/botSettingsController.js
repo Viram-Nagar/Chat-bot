@@ -1,5 +1,5 @@
-const BotSettings = require("../models/BotSettings");
-const Feedback = require("../models/Feedback");
+const BotSettings = require("../models/botSettings");
+const Feedback = require("../models/feedback");
 const { getValidBotTypes } = require("../services/botPersonalities");
 
 // ─── Get settings for all bots ──────────────────────────────────
