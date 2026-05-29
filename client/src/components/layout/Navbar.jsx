@@ -7,7 +7,6 @@ import {
   History,
   LayoutDashboard,
   Bot,
-  Settings,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
@@ -56,13 +55,13 @@ const Navbar = () => {
           {/* ── Right Side ───────────────────────────── */}
           <div className="flex items-center gap-2">
             {/* Theme Toggle */}
-            <button
+            {/* <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               aria-label="Toggle theme"
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
+            </button> */}
 
             {isAuthenticated ? (
               <>
