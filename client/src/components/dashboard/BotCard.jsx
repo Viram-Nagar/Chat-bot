@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, MessageSquare } from "lucide-react";
+import { useBotSettingsStore } from "../../store/botSettingsStore";
 
 const BotCard = ({ bot }) => {
   const navigate = useNavigate();
+  const { getMergedBotConfig } = useBotSettingsStore();
 
+  const mergedBot = getMergedBotConfig(bot);
   return (
     <div
       onClick={() => navigate(`/chat/${bot.id}`)}
@@ -56,13 +59,13 @@ const BotCard = ({ bot }) => {
 
         {/* ── Bot info ──────────────────────────────── */}
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">
-          {bot.name}
+          {mergedBot.name}
         </h3>
-        <p className={`text-xs font-semibold ${bot.text} mb-3`}>
-          {bot.tagline}
+        <p className={`text-xs font-semibold ${mergedBot.text} mb-3`}>
+          {mergedBot.tagline}
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
-          {bot.description}
+          {mergedBot.description}
         </p>
 
         {/* ── Starter questions ─────────────────────── */}
@@ -70,19 +73,19 @@ const BotCard = ({ bot }) => {
           <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
             Try asking...
           </p>
-          {bot.starters.slice(0, 3).map((starter) => (
+          {mergedBot.starters.slice(0, 3).map((starter) => (
             <div
               key={starter}
               className={`
                 flex items-start gap-2 px-3 py-2 rounded-lg
-                ${bot.bgLight} ${bot.bgDark} ${bot.border} border
+                ${mergedBot.bgLight} ${mergedBot.bgDark} ${mergedBot.border} border
                 text-xs text-gray-600 dark:text-gray-300
                 group-hover:border-opacity-60 transition-colors
               `}
             >
               <MessageSquare
                 size={11}
-                className={`mt-0.5 flex-shrink-0 ${bot.text}`}
+                className={`mt-0.5 flex-shrink-0 ${mergedBot.text}`}
               />
               <span>{starter}</span>
             </div>
@@ -93,7 +96,7 @@ const BotCard = ({ bot }) => {
         <button
           className={`
             w-full py-2.5 rounded-xl text-sm font-semibold
-            bg-gradient-to-r ${bot.gradient}
+            bg-gradient-to-r ${mergedBot.gradient}
             text-white shadow-sm
             hover:shadow-md active:scale-[0.98]
             transition-all duration-200

@@ -1,7 +1,10 @@
 import { getBotConfig } from "../../utils/botConfig";
+import { useBotSettingsStore } from "../../store/botSettingsStore";
 
 const TypingIndicator = ({ botType }) => {
   const bot = getBotConfig(botType);
+  const { getMergedBotConfig } = useBotSettingsStore(); // ← ADD
+  const mergedBot = getMergedBotConfig(bot);
 
   return (
     <div className="flex items-end gap-2.5 message-appear">
@@ -13,7 +16,7 @@ const TypingIndicator = ({ botType }) => {
           flex items-center justify-center text-sm shadow-sm
         `}
       >
-        {bot?.emoji || "🤖"}
+        {mergedBot?.emoji || "🤖"}
       </div>
 
       {/* Bubble */}
@@ -27,7 +30,7 @@ const TypingIndicator = ({ botType }) => {
 
       {/* Bot name */}
       <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">
-        {bot?.name} is typing...
+        {mergedBot?.name} is typing...
       </span>
     </div>
   );

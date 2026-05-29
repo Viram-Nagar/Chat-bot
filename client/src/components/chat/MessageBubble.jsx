@@ -5,6 +5,7 @@ import { formatTime, copyToClipboard } from "../../utils/helpers";
 import { useAuthStore } from "../../store/authStore";
 import Avatar from "../shared/Avatar";
 import FeedbackModal from "./FeedbackModal";
+import { useBotSettingsStore } from "../../store/botSettingsStore";
 
 // ── Code block ───────────────────────────────────────────────────
 const CodeBlock = ({ code, language }) => {
@@ -160,6 +161,8 @@ const MessageBubble = ({ message, botType, isStreaming = false }) => {
   const bot = getBotConfig(botType);
   const isUser = message.role === "user";
   const parts = parseContent(message.content || "");
+  const { getMergedBotConfig } = useBotSettingsStore();
+  const mergedBot = getMergedBotConfig(bot);
 
   const handleCopyMessage = async () => {
     const ok = await copyToClipboard(message.content);
@@ -226,7 +229,7 @@ const MessageBubble = ({ message, botType, isStreaming = false }) => {
           <span
             className={`text-xs font-semibold ${bot?.text || "text-gray-500"}`}
           >
-            {bot?.name}
+            {mergedBot?.name}
           </span>
           {isStreaming && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs rounded-full">

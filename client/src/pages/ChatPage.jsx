@@ -26,87 +26,183 @@ import ConversationSidebar from "../components/chat/ConversationSidebar";
 import ChatWindow from "../components/chat/ChatWindow";
 import InputBar from "../components/chat/InputBar";
 import toast from "react-hot-toast";
+import { useBotSettingsStore } from "../store/botSettingsStore";
 import { useState } from "react";
 
 // ── Chat Header ──────────────────────────────────────────────────
+// const ChatHeader = ({
+//   bot,
+//   isSidebarOpen,
+//   toggleSidebar,
+//   onNewChat,
+//   isConnected,
+// }) => (
+//   <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
+//     <div className="flex items-center gap-3">
+//       <button
+//         onClick={toggleSidebar}
+//         className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+//       >
+//         <PanelLeftOpen size={18} />
+//       </button>
+
+//       <Link
+//         to="/dashboard"
+//         className="hidden sm:flex items-center gap-1.5 p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+//       >
+//         <ArrowLeft size={16} />
+//       </Link>
+
+//       {/* Bot info */}
+//       <div className="flex items-center gap-3">
+//         <div
+//           className={`w-9 h-9 rounded-xl flex-shrink-0 bg-gradient-to-br ${bot?.gradient} flex items-center justify-center text-lg shadow-sm`}
+//         >
+//           {bot?.emoji}
+//         </div>
+//         <div>
+//           <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+//             {bot?.name}
+//           </h1>
+//           <p className={`text-xs ${bot?.text} font-medium`}>{bot?.tagline}</p>
+//         </div>
+//       </div>
+
+//       {/* Connection status */}
+//       <div
+//         className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isConnected ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}
+//       >
+//         {isConnected ? (
+//           <>
+//             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+//             <span className="text-xs font-medium text-green-600 dark:text-green-400">
+//               Live
+//             </span>
+//           </>
+//         ) : (
+//           <>
+//             <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+//             <span className="text-xs font-medium text-red-500 dark:text-red-400">
+//               Offline
+//             </span>
+//           </>
+//         )}
+//       </div>
+//     </div>
+
+//     {/* Right */}
+//     <div className="flex items-center gap-2">
+//       <button
+//         onClick={onNewChat}
+//         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
+//       >
+//         <Plus size={13} />
+//         New Chat
+//       </button>
+//       <Link
+//         to="/dashboard"
+//         className="sm:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+//       >
+//         <LayoutDashboard size={16} />
+//       </Link>
+//     </div>
+//   </header>
+// );
+
+// ── Updated ChatHeader ───────────────────────────────────────────
 const ChatHeader = ({
   bot,
   isSidebarOpen,
   toggleSidebar,
   onNewChat,
   isConnected,
-}) => (
-  <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
-    <div className="flex items-center gap-3">
-      <button
-        onClick={toggleSidebar}
-        className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-      >
-        <PanelLeftOpen size={18} />
-      </button>
+}) => {
+  const { getMergedBotConfig } = useBotSettingsStore(); // ← ADD
+  const mergedBot = getMergedBotConfig(bot); // ← ADD
 
-      <Link
-        to="/dashboard"
-        className="hidden sm:flex items-center gap-1.5 p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-      >
-        <ArrowLeft size={16} />
-      </Link>
-
-      {/* Bot info */}
+  return (
+    <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
       <div className="flex items-center gap-3">
-        <div
-          className={`w-9 h-9 rounded-xl flex-shrink-0 bg-gradient-to-br ${bot?.gradient} flex items-center justify-center text-lg shadow-sm`}
+        <button
+          onClick={toggleSidebar}
+          className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
         >
-          {bot?.emoji}
+          <PanelLeftOpen size={18} />
+        </button>
+
+        <Link
+          to="/dashboard"
+          className="hidden sm:flex items-center gap-1.5 p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        >
+          <ArrowLeft size={16} />
+        </Link>
+
+        {/* Bot info — uses custom name */}
+        <div className="flex items-center gap-3">
+          <div
+            className={`
+              w-9 h-9 rounded-xl flex-shrink-0
+              bg-gradient-to-br ${mergedBot?.gradient}
+              flex items-center justify-center text-lg shadow-sm
+            `}
+          >
+            {mergedBot?.emoji}
+          </div>
+          <div>
+            <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
+              {mergedBot?.name} {/* ← custom name */}
+            </h1>
+            <p className={`text-xs ${mergedBot?.text} font-medium`}>
+              {mergedBot?.tagline}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-            {bot?.name}
-          </h1>
-          <p className={`text-xs ${bot?.text} font-medium`}>{bot?.tagline}</p>
+
+        {/* Connection status */}
+        <div
+          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
+            isConnected
+              ? "bg-green-50 dark:bg-green-900/20"
+              : "bg-red-50 dark:bg-red-900/20"
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                Live
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+              <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                Offline
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Connection status */}
-      <div
-        className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isConnected ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}
-      >
-        {isConnected ? (
-          <>
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs font-medium text-green-600 dark:text-green-400">
-              Live
-            </span>
-          </>
-        ) : (
-          <>
-            <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-            <span className="text-xs font-medium text-red-500 dark:text-red-400">
-              Offline
-            </span>
-          </>
-        )}
+      {/* Right */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onNewChat}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
+        >
+          <Plus size={13} />
+          New Chat
+        </button>
+        <Link
+          to="/dashboard"
+          className="sm:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        >
+          <LayoutDashboard size={16} />
+        </Link>
       </div>
-    </div>
-
-    {/* Right */}
-    <div className="flex items-center gap-2">
-      <button
-        onClick={onNewChat}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
-      >
-        <Plus size={13} />
-        New Chat
-      </button>
-      <Link
-        to="/dashboard"
-        className="sm:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-      >
-        <LayoutDashboard size={16} />
-      </Link>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
 
 // ── Main ChatPage ────────────────────────────────────────────────
 const ChatPage = () => {

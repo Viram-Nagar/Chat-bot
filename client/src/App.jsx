@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
+import { useBotSettingsStore } from "./store/botSettingsStore";
 
 // Layout
 import Navbar from "./components/layout/Navbar";
@@ -22,11 +23,19 @@ import ProfilePage from "./pages/ProfilePage";
 const App = () => {
   const initialize = useAuthStore((s) => s.initialize);
   const initTheme = useThemeStore((s) => s.initTheme);
+  const { loadAllSettings } = useBotSettingsStore(); // ← ADD
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     initTheme();
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAllSettings(); // ← ADD
+    }
+  }, [isAuthenticated]);
 
   return (
     <BrowserRouter>

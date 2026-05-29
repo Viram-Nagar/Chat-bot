@@ -17,6 +17,7 @@ import { useBotSettingsStore } from "../store/botSettingsStore";
 import { getBotConfig, BOT_LIST } from "../utils/botConfig";
 import ConfirmModal from "../components/shared/ConfirmModal";
 import toast from "react-hot-toast";
+import { useBotSettingsStore } from "../store/botSettingsStore";
 
 // ── Section wrapper ───────────────────────────────────────────────
 const Section = ({ title, subtitle, icon: Icon, iconBg, children }) => (
@@ -157,6 +158,7 @@ const BotSettingsPage = () => {
         language,
         isEnabled,
       });
+      await loadAllSettings();
       toast.success(`${bot?.name} settings saved!`);
     } catch {
       toast.error("Failed to save settings");
