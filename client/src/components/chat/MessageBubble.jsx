@@ -329,11 +329,6 @@ const MessageBubble = ({ message, botType, isStreaming = false }) => {
 
 export default MessageBubble;
 
-git add .
-git commit -m "feat: bot settings + feedback/rating system"
-git push
-
-
 // import { useState } from "react";
 // import { Copy, Check, Star } from "lucide-react";
 // import { getBotConfig } from "../../utils/botConfig";
